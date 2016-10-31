@@ -29,6 +29,7 @@ namespace Dune {
   public:
     /** \brief The highest quadrature order available */
     enum { highest_order = 12 };
+
   private:
     friend class QuadratureRuleFactory<ct,2>;
     SimplexQuadratureRule (int p);
@@ -44,6 +45,7 @@ namespace Dune {
   public:
     /** \brief The highest quadrature order available */
     enum { highest_order = 5 };
+
   private:
     friend class QuadratureRuleFactory<ct,3>;
     SimplexQuadratureRule (int p);

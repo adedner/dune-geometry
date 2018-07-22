@@ -53,42 +53,18 @@ namespace Dune {
   {
   public:
     /** \brief The highest quadrature order available */
-    enum { highest_order=~d };
+    enum { highest_order = ~d };
 
   private:
     friend class QuadratureRuleFactory<ct,1>;
     ~aQuadratureRule (int p);
   };
 
-  //! \internal Helper template for the initialization of the quadrature rules
-  template<typename ct,
-      bool fundamental = std::is_floating_point<ct>::value>
-  struct ~aQuadratureInitHelper;
-
   template<typename ct>
-  struct ~aQuadratureInitHelper<ct, true> {
-    static void init(int p,
-                     std::vector< FieldVector<ct, 1> > & _points,
-                     std::vector< ct > & _weight,
-                     int & delivered_order);
-  };
-
-  template<typename ct>
-  struct ~aQuadratureInitHelper<ct, false> {
-    static void init(int p,
-                     std::vector< FieldVector<ct, 1> > & _points,
-                     std::vector< ct > & _weight,
-                     int & delivered_order);
-  };
-
-  // for fundamental types
-  template<typename ct>
-  void ~aQuadratureInitHelper<ct,true>::init(int p,
-         std::vector< FieldVector<ct, 1> > & _points,
-         std::vector< ct > & _weight,
-         int & delivered_order)
+  ~aQuadratureRule<ct>::~aQuadratureRule (int p)
+    : QuadratureRule<ct,1>(GeometryTypes::line)
   {
-    switch(p)
+    switch (p)
     {
 ", scriptname, name, name, name, name, name, name, max_order, name, name, name, name, name, name),
 
@@ -186,7 +162,7 @@ for delivered_order: 0 thru max_order do block([],
 ", delivered_order, delivered_order+1, delivered_order)
 ),
 
-printf(fd,"    default :
+printf(fd,"    default:
       DUNE_THROW(QuadratureOrderOutOfRange, \"Quadrature rule \" << p << \" not supported!\");
     }
   }
@@ -194,27 +170,9 @@ printf(fd,"    default :
 
 printf(fd,"
 
-  template<typename ct>
-  ~aQuadratureRule<ct>::~aQuadratureRule (int p)
-      : QuadratureRule<ct,1>(GeometryTypes::line)
-  {
-    //! set up quadrature of given order in d dimensions
-    std::vector< FieldVector<ct,1> > _points;
-    std::vector< ct > _weight;
-
-    int _deliveredOrder;
-
-    ~aQuadratureInitHelper<ct>::init(p, _points, _weight, _deliveredOrder);
-
-    this->order_ = _deliveredOrder;
-    assert(_points.size() == _weight.size());
-    for (size_t i = 0; i < _points.size(); i++)
-      this->emplace_back(_points[i], _weight[i]);
-  }
-
 } // namespace Dune
 
 #endif // DUNE_GEOMETRY_QUADRATURE_~a_HH
-", name, name, name, name),
+", name),
 close(fd)
 )$

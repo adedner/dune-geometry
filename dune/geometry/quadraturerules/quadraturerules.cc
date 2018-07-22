@@ -14,9 +14,6 @@ namespace Dune {
   /** Singleton holding the SimplexQuadrature points dim==3 */
   SimplexQuadraturePoints<3> SimplexQuadraturePointsSingleton<3>::sqp;
 
-  /** Singleton holding the Prism Quadrature points  */
-  PrismQuadraturePoints<3> PrismQuadraturePointsSingleton<3>::prqp;
-
   // explicit template instatiation
   template class GaussLobattoQuadratureRule<double, 1>;
   template class GaussQuadratureRule<double, 1>;

@@ -16,10 +16,16 @@ namespace Dune {
   {
     friend class QuadratureRuleFactory<ct,0>;
 
+    /** \brief The highest quadrature order available */
+    enum { highest_order = std::numeric_limits<int>::max() };
+
+    using Field = typename QuadraturePoint<ct,0>::Field;
+    using Vector = typename QuadraturePoint<ct,0>::Vector;
+
     PointQuadratureRule ()
-      : QuadratureRule<ct,0>(GeometryTypes::vertex, std::numeric_limits<int>::max())
+      : QuadratureRule<ct,0>(GeometryTypes::vertex, highest_order)
     {
-      this->emplace_back(FieldVector<ct,0>{}, 1.0);
+      this->emplace_back(Vector{}, Field{1});
     }
   };
 

@@ -82,64 +82,68 @@ namespace Dune {
   {
     /** \brief Gauss-Legendre rules (default)
     *
-    *  -1D: Gauss-Jacobi rule with parameters \f$\alpha = \beta =0 \f$, i.e. for integrals with a constant weight function.
-    *       The quadrature points do not include interval endpoints.
-    *       Polynomials of order 2n - 1 can be integrated exactly.
-    *  -higher dimension: For the 2D/3D case efficient rules for certain geometries may be used if available.
-    *                     Higher dimensional quadrature rules are constructed via \p TensorProductQuadratureRule.
-    *                     In this case the 1D rules eventually need higher order to compensate occuring weight functions(i.e. simplices).
+    *  - 1D: Gauss-Jacobi rule with parameters \f$\alpha = \beta =0 \f$, i.e. for integrals with a
+    *    constant weight function. The quadrature points do not include interval endpoints.
+    *    Polynomials of order 2n - 1 can be integrated exactly.
+    *  - higher dimension: For the 2D/3D case efficient rules for certain geometries may be used if
+    *    available. Higher dimensional quadrature rules are constructed via
+    *    \p TensorProductQuadratureRule. In this case the 1D rules eventually need higher order to
+    *    compensate occuring weight functions (i.e. simplices).
     */
     GaussLegendre = 0,
 
     /** \brief Gauss-Jacobi rules with \f$\alpha =1\f$
     *
-    *  -1D Gauss-Jacobi rule with parameters \f$\alpha =1,\ \beta =0 \f$
-    *  -Is used to construct efficient simplex quadrature rules of higher order
+    *  - 1D Gauss-Jacobi rule with parameters \f$\alpha =1,\ \beta =0 \f$
+    *  - Is used to construct efficient simplex quadrature rules of higher order
     */
     GaussJacobi_1_0 = 1,
 
     /** \brief Gauss-Legendre rules with \f$\alpha =2\f$
     *
-    *  -1D Gauss-Jacobi rule with parameters \f$\alpha =2,\ \beta =0 \f$
-    *  -Is used to construct efficient simplex quadrature rules of higher order
+    *  - 1D Gauss-Jacobi rule with parameters \f$\alpha =2,\ \beta =0 \f$
+    *  - Is used to construct efficient simplex quadrature rules of higher order
     */
     GaussJacobi_2_0 = 2,
 
     /** \brief Gauss-Legendre rules with \f$\alpha =n\f$
     *
-    *  -1D: Gauss-Jacobi rule with parameters \f$\alpha = n,\ \beta =0 \f$
-    *  -higher dimension: For the 2D/3D case efficient rules for certain geometries may be used if available.
-    *                     Higher dimensional quadrature rules are constructed via \p TensorProductQuadratureRule.
-    *                     In this case the 1D rules respect eventually occuring weight functions(i.e. simplices).
-    *  -The rules for high dimension or order are computed at run time and only floating point number types are supported.(LAPACK is needed for this case)
-    *  -Most efficient quadrature type for simplices.
+    *  - 1D: Gauss-Jacobi rule with parameters \f$\alpha = n,\ \beta =0 \f$
+    *  - higher dimension: For the 2D/3D case efficient rules for certain geometries may be used if
+    *    available. Higher dimensional quadrature rules are constructed via
+    *    \p TensorProductQuadratureRule. In this case the 1D rules respect eventually occuring
+    *    weight functions (i.e. simplices).
+    *  - The rules for high dimension or order are computed at run time and only floating point
+    *    number types are supported. (LAPACK is needed for this case)
+    *  - Most efficient quadrature type for simplices.
     *
-    *   \note For details please use the book "Approximate Calculation of Multiple Integrals" by A.H. Stroud published in 1971.
+    *   \note For details please use the book "Approximate Calculation of Multiple Integrals" by A.
+    *   H. Stroud published in 1971.
     */
     GaussJacobi_n_0 = 3,
 
     /** \brief Gauss-Lobatto rules
      *
-     * 1D: Gauss-Lobatto rules for a constant weight function.
-     * These are optimal rules under the constraint that both interval endpoints are quadrature points.
-     * Polynomials of order 2n - 3 can be integrated exactly.
+     * - 1D: Gauss-Lobatto rules for a constant weight function.
+     * - These are optimal rules under the constraint that both interval endpoints are quadrature
+     *   points. Polynomials of order 2n - 3 can be integrated exactly.
      */
     GaussLobatto = 4,
 
     /** \brief Gauss-Radau rules including the left endpoint
      *
-     * 1D: Gauss-Radau rules for a constant weight function.
-     * These are optimal rules under the constraint that the left endpoint of the integration interval is a quadrature point.
-     * Polynomials of order 2n - 2 can be integrated exactly.
+     * - 1D: Gauss-Radau rules for a constant weight function.
+     * - These are optimal rules under the constraint that the left endpoint of the integration
+     *   interval is a quadrature point. Polynomials of order 2n - 2 can be integrated exactly.
      */
     GaussRadauLeft = 5,
 
     /** \brief Gauss-Radau rules including the right endpoint
      *
-     * 1D: Gauss-Radau rules for a constant weight function.
-     * These are optimal rules under the constraint that the right endpoint of the integration interval is a quadrature point.
-     * Polynomials of order 2n - 2 can be integrated exactly.
-     * The right Gauss-Radau rules are the just the mirrored left Gauss-Radau rules.
+     * - 1D: Gauss-Radau rules for a constant weight function.
+     * - These are optimal rules under the constraint that the right endpoint of the integration
+     *   interval is a quadrature point. Polynomials of order 2n - 2 can be integrated exactly.
+     *   The right Gauss-Radau rules are just the mirrored left Gauss-Radau rules.
      */
     GaussRadauRight = 6,
     size

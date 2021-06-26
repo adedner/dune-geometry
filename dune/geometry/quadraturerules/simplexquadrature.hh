@@ -733,19 +733,19 @@ namespace Dune {
     : QuadratureRule<ct,3>(GeometryTypes::tetrahedron)
   {
     // helper variables used to define the quadrature rules
-    const long double m_4_a = 0.585410196624968500L;
-    const long double m_4_b = 0.138196601125010500L;
-    const long double w_4 = 1.0L/4.0L/6.0L;
-    const long double s_1 = 0.09197107805272303279L;   /* (7 - sqrt(15) ) / 34 */
-    const long double s_2 = 0.31979362782962990839L;   /* (7 + sqrt(15) ) / 34 */
-    const long double t_1 = 0.72408676584183090164L;   /* (13 + 3*sqrt(15) ) / 34 */
-    const long double t_2 = 0.04061911651111027484L;   /* (13 - 3*sqrt(15) ) / 34 */
-    const long double u   = 0.05635083268962915574L;   /* (10 - 2*sqrt(15) ) / 40 */
-    const long double v   = 0.44364916731037084426L;   /* (10 + 2*sqrt(15) ) / 40 */
-    const long double A   = 0.019753086419753086420L;  /* 16 / 135 / vol */
-    const long double B_1 = 0.011989513963169770001L;  /* (2665 + 14*sqrt(15) )/37800/vol */
-    const long double B_2 = 0.011511367871045397547L;  /* (2665 - 14*sqrt(15) )/37800/vol */
-    const long double C   = 0.0088183421516754850088L; /* 20 / 378 / vol */
+    const ct m_4_a = 0.585410196624968500L;
+    const ct m_4_b = 0.138196601125010500L;
+    const ct w_4 = 1.0L/4.0L/6.0L;
+    const ct s_1 = 0.09197107805272303279L;   /* (7 - sqrt(15) ) / 34 */
+    const ct s_2 = 0.31979362782962990839L;   /* (7 + sqrt(15) ) / 34 */
+    const ct t_1 = 0.72408676584183090164L;   /* (13 + 3*sqrt(15) ) / 34 */
+    const ct t_2 = 0.04061911651111027484L;   /* (13 - 3*sqrt(15) ) / 34 */
+    const ct u   = 0.05635083268962915574L;   /* (10 - 2*sqrt(15) ) / 40 */
+    const ct v   = 0.44364916731037084426L;   /* (10 + 2*sqrt(15) ) / 40 */
+    const ct A   = 0.019753086419753086420L;  /* 16 / 135 / vol */
+    const ct B_1 = 0.011989513963169770001L;  /* (2665 + 14*sqrt(15) )/37800/vol */
+    const ct B_2 = 0.011511367871045397547L;  /* (2665 - 14*sqrt(15) )/37800/vol */
+    const ct C   = 0.0088183421516754850088L; /* 20 / 378 / vol */
 
     switch (p)
     {

@@ -733,19 +733,19 @@ namespace Dune {
     : QuadratureRule<ct,3>(GeometryTypes::tetrahedron)
   {
     // helper variables used to define the quadrature rules
-    static const double m_4_a = 0.585410196624968500;
-    static const double m_4_b = 0.138196601125010500;
-
-    static const double s_1=0.09197107805272303279;     /* (7 - sqrt(15) ) / 34 */
-    static const double s_2=0.31979362782962990839;     /* (7 + sqrt(15) ) / 34 */
-    static const double t_1=0.72408676584183090164;     /* (13 + 3*sqrt(15) ) / 34 */
-    static const double t_2=0.04061911651111027484;     /* (13 - 3*sqrt(15) ) / 34 */
-    static const double u  =0.05635083268962915574;     /* (10 - 2*sqrt(15) ) / 40 */
-    static const double v  =0.44364916731037084426;     /* (10 + 2*sqrt(15) ) / 40 */
-    static const double A  =0.019753086419753086420;    /* 16 / 135 / vol */
-    static const double B_1=0.011989513963169770001;    /* (2665 + 14*sqrt(15) ) / 37800 / vol */
-    static const double B_2=0.011511367871045397547;    /* (2665 - 14*sqrt(15) ) / 37800 / vol */
-    static const double C  =0.0088183421516754850088;   /* 20 / 378 / vol */
+    const long double m_4_a = 0.585410196624968500L;
+    const long double m_4_b = 0.138196601125010500L;
+    const long double w_4 = 1.0L/4.0L/6.0L;
+    const long double s_1 = 0.09197107805272303279L;   /* (7 - sqrt(15) ) / 34 */
+    const long double s_2 = 0.31979362782962990839L;   /* (7 + sqrt(15) ) / 34 */
+    const long double t_1 = 0.72408676584183090164L;   /* (13 + 3*sqrt(15) ) / 34 */
+    const long double t_2 = 0.04061911651111027484L;   /* (13 - 3*sqrt(15) ) / 34 */
+    const long double u   = 0.05635083268962915574L;   /* (10 - 2*sqrt(15) ) / 40 */
+    const long double v   = 0.44364916731037084426L;   /* (10 + 2*sqrt(15) ) / 40 */
+    const long double A   = 0.019753086419753086420L;  /* 16 / 135 / vol */
+    const long double B_1 = 0.011989513963169770001L;  /* (2665 + 14*sqrt(15) )/37800/vol */
+    const long double B_2 = 0.011511367871045397547L;  /* (2665 - 14*sqrt(15) )/37800/vol */
+    const long double C   = 0.0088183421516754850088L; /* 20 / 378 / vol */
 
     switch (p)
     {
@@ -761,9 +761,7 @@ namespace Dune {
       case 1:
         this->order_ = 1;
         this->resize(1);
-        (*this)[0] = {
-          {0.25, 0.25, 0.25},
-           1.0/6.0};
+        (*this)[0] = {{0.25, 0.25, 0.25}, 1.0L/6.0L};
         break;
 
       // polynom degree 2
@@ -778,18 +776,10 @@ namespace Dune {
       case 2:
         this->order_ = 2;
         this->resize(4);
-        (*this)[0] = {
-          {m_4_a, m_4_b, m_4_b},
-           1.0/4.0/6.0};
-        (*this)[1] = {
-          {m_4_b, m_4_a, m_4_b},
-           1.0/4.0/6.0};
-        (*this)[2] = {
-          {m_4_b, m_4_b, m_4_a},
-           1.0/4.0/6.0};
-        (*this)[3] = {
-          {m_4_b, m_4_b, m_4_b},
-           1.0/4.0/6.0};
+        (*this)[0] = {{m_4_a, m_4_b, m_4_b}, w_4};
+        (*this)[1] = {{m_4_b, m_4_a, m_4_b}, w_4};
+        (*this)[2] = {{m_4_b, m_4_b, m_4_a}, w_4};
+        (*this)[3] = {{m_4_b, m_4_b, m_4_b}, w_4};
         break;
 
       // polynom degree 3
@@ -804,30 +794,14 @@ namespace Dune {
       case 3:
         this->order_ = 3;
         this->resize(8);
-        (*this)[0] = {
-          {0.0, 0.0, 0.0},
-           0.025/6.0};
-        (*this)[1] = {
-          {1.0, 0.0, 0.0},
-           0.025/6.0};
-        (*this)[2] = {
-          {0.0, 1.0, 0.0},
-           0.025/6.0};
-        (*this)[3] = {
-          {0.0, 0.0, 1.0},
-           0.025/6.0};
-        (*this)[4] = {
-          {1.0/3.0, 1.0/3.0, 0.0},
-           0.225/6.0};
-        (*this)[5] = {
-          {1.0/3.0, 0.0, 1.0/3.0},
-           0.225/6.0};
-        (*this)[6] = {
-          {0.0, 1.0/3.0, 1.0/3.0},
-           0.225/6.0};
-        (*this)[7] = {
-          {1.0/3.0, 1.0/3.0, 1.0/3.0},
-           0.225/6.0};
+        (*this)[0] = {{0.0, 0.0, 0.0}, 0.025L/6.0L};
+        (*this)[1] = {{1.0, 0.0, 0.0}, 0.025L/6.0L};
+        (*this)[2] = {{0.0, 1.0, 0.0}, 0.025L/6.0L};
+        (*this)[3] = {{0.0, 0.0, 1.0}, 0.025L/6.0L};
+        (*this)[4] = {{1.0/3.0, 1.0/3.0, 0.0}, 0.225L/6.0L};
+        (*this)[5] = {{1.0/3.0, 0.0, 1.0/3.0}, 0.225L/6.0L};
+        (*this)[6] = {{0.0, 1.0/3.0, 1.0/3.0}, 0.225L/6.0L};
+        (*this)[7] = {{1.0/3.0, 1.0/3.0, 1.0/3.0}, 0.225L/6.0L};
         break;
 
 
@@ -844,51 +818,21 @@ namespace Dune {
       case 5:
         this->order_ = 5;
         this->resize(15);
-        (*this)[0] = {
-          {0.25, 0.25, 0.25},
-           A};
-        (*this)[1] = {
-          {s_1, s_1, s_1},
-           B_1};
-        (*this)[2] = {
-          {t_1, s_1, s_1},
-           B_1};
-        (*this)[3] = {
-          {s_1, t_1, s_1},
-           B_1};
-        (*this)[4] = {
-          {s_1, s_1, t_1},
-           B_1};
-        (*this)[5] = {
-          {s_2, s_2, s_2},
-           B_2};
-        (*this)[6] = {
-          {t_2, s_2, s_2},
-           B_2};
-        (*this)[7] = {
-          {s_2, t_2, s_2},
-           B_2};
-        (*this)[8] = {
-          {s_2, s_2, t_2},
-           B_2};
-        (*this)[9] = {
-          {v, u, u},
-           C};
-        (*this)[10] = {
-          {u, v, u},
-           C};
-        (*this)[11] = {
-          {u, u, v},
-           C};
-        (*this)[12] = {
-          {v, v, u},
-           C};
-        (*this)[13] = {
-          {v, u, v},
-           C};
-        (*this)[14] = {
-          {u, v, v},
-           C};
+        (*this)[0] = {{0.25, 0.25, 0.25}, A};
+        (*this)[1] = {{s_1, s_1, s_1}, B_1};
+        (*this)[2] = {{t_1, s_1, s_1}, B_1};
+        (*this)[3] = {{s_1, t_1, s_1}, B_1};
+        (*this)[4] = {{s_1, s_1, t_1}, B_1};
+        (*this)[5] = {{s_2, s_2, s_2}, B_2};
+        (*this)[6] = {{t_2, s_2, s_2}, B_2};
+        (*this)[7] = {{s_2, t_2, s_2}, B_2};
+        (*this)[8] = {{s_2, s_2, t_2}, B_2};
+        (*this)[9]  = {{v, u, u}, C};
+        (*this)[10] = {{u, v, u}, C};
+        (*this)[11] = {{u, u, v}, C};
+        (*this)[12] = {{v, v, u}, C};
+        (*this)[13] = {{v, u, v}, C};
+        (*this)[14] = {{u, v, v}, C};
         break;
 
       default:

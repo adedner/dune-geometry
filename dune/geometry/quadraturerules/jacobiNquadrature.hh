@@ -54,7 +54,7 @@ namespace Dune {
       auto&& rule = decideRule(order,alpha);
       for( auto qpoint : rule )
         this->push_back(qpoint);
-      this->delivered_order = 2*rule.size()-1;
+      this->order_ = 2*rule.size()-1;
 
     }
 
@@ -65,9 +65,9 @@ namespace Dune {
 
     QuadratureRule<ct,1> decideRule(int const degree, int const alpha)
     {
-      const auto maxOrder = std::min(   unsigned(GaussQuadratureRule1D<ct>::highest_order),
-                              std::min( unsigned(Jacobi1QuadratureRule1D<ct>::highest_order),
-                                        unsigned(Jacobi2QuadratureRule1D<ct>::highest_order))
+      const auto maxOrder = std::min(   unsigned(GaussQuadratureRule<ct>::highest_order),
+                              std::min( unsigned(Jacobi1QuadratureRule<ct>::highest_order),
+                                        unsigned(Jacobi2QuadratureRule<ct>::highest_order))
                               );
       return unsigned(degree) < maxOrder ? decideRuleExponent(degree,alpha) : UseLapackOrError<ct>(degree, alpha);
     }

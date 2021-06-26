@@ -55,6 +55,9 @@ namespace Dune {
     /** \brief The highest quadrature order available */
     enum { highest_order = ~d };
 
+    using Field = typename QuadraturePoint<ct,1>::Field;
+    using Vector = typename QuadraturePoint<ct,1>::Vector;
+
   private:
     friend class QuadratureRuleFactory<ct,1>;
     ~aQuadratureRule (int p);
@@ -66,7 +69,7 @@ namespace Dune {
   {
     switch (p)
     {
-", scriptname, name, name, name, name, name, name, max_order, name, name, name, name, name, name),
+", scriptname, name, name, name, max_order, name, name, name),
 
 for delivered_order: 0 thru max_order do block([],
   twice_free_points: delivered_order - num_endpoints + 1,
@@ -78,11 +81,9 @@ for delivered_order: 0 thru max_order do block([],
     points: makelist(rhs(p), p, bfallroots(points_generator(num_points))),
     weights: makelist(bfloat(weights_generator(num_points, p)), p, points),
     if not length(points) = num_points then print("points_generator returned ", length(points), "points, but ", num_points, " were requested!"),
-    printf(fd,"      delivered_order = ~d;
+    printf(fd,"      this->order_ = ~d;
 ",delivered_order),
-    printf(fd,"      _points.resize(~d);
-",num_points),
-    printf(fd,"      _weight.resize(~d);
+    printf(fd,"      this->resize(~d);
 ",num_points),
     /* sort the list of indices according to the corresponding weights*/
     S: sort(makelist(n, n, 1, num_points), lambda([x,y], weights[x] < weights[y])),
@@ -93,10 +94,12 @@ for delivered_order: 0 thru max_order do block([],
       p: (points[j]+1)/2,
       p: max(p-epsilon,-epsilon)+epsilon,
       w: weights[j]/2,
-      printf(fd,"      _points[~d] = ~h;
-",i-1, p),
-      printf(fd,"      _weight[~d] = ~h;
-",i-1, w)
+      printf(fd,"      (*this)[~d] = {
+",i-1),
+      printf(fd,"        Vector{~hL},
+",p),
+      printf(fd,"        Field{~hL}};
+",w)
     ),
     printf(fd,"      break;
 
@@ -107,62 +110,6 @@ for delivered_order: 0 thru max_order do block([],
 ),
 
 printf(fd,"    default :
-      DUNE_THROW(QuadratureOrderOutOfRange, \"Quadrature rule \" << p << \" not supported!\");
-    }
-  }
-"),
-
-printf(fd,"
-  // for non-fundamental types: assign numbers as strings
-  template<typename ct>
-  void ~aQuadratureInitHelper<ct,false>::init(int p,
-         std::vector< FieldVector<ct, 1> > & _points,
-         std::vector< ct > & _weight,
-         int & delivered_order)
-  {
-    switch(p)
-    {
-",name),
-
-for delivered_order: 0 thru max_order do block([],
-  twice_free_points: delivered_order - num_endpoints + 1,
-  if mod(twice_free_points, 2) = 0 then block([],
-    printf(fd, "    case ~d :
-", delivered_order),
-    free_points: twice_free_points / 2,
-    num_points: free_points + num_endpoints,
-    points: makelist(rhs(p), p, bfallroots(points_generator(num_points))),
-    weights: makelist(bfloat(weights_generator(num_points, p)), p, points),
-    if not length(points) = num_points then print("points_generator returned ", length(points), "points, but ", num_points, " were requested!"),
-    printf(fd,"      delivered_order = ~d;
-",delivered_order),
-    printf(fd,"      _points.resize(~d);
-",num_points),
-    printf(fd,"      _weight.resize(~d);
-",num_points),
-    /* sort the list of indices according to the corresponding weights*/
-    S: sort(makelist(n, n, 1, num_points), lambda([x,y], weights[x] < weights[y])),
-    for i: 1 thru num_points do block([j],
-      /* for numerical stability: write points sorted by their weights in ascending order*/
-      j: S[i],
-      /* shift points and weights from the interval [-1,1] to [0,1] */
-      p: (points[j]+1)/2,
-      p: max(p-epsilon,-epsilon)+epsilon,
-      w: weights[j]/2,
-      printf(fd,"      _points[~d] = ct(\"~h\");
-",i-1, p),
-      printf(fd,"      _weight[~d] = ct(\"~h\");
-",i-1, w)
-    ),
-    printf(fd,"      break;
-
-")
-  ) else printf(fd, "    // order ~d,~d
-    case ~d :
-", delivered_order, delivered_order+1, delivered_order)
-),
-
-printf(fd,"    default:
       DUNE_THROW(QuadratureOrderOutOfRange, \"Quadrature rule \" << p << \" not supported!\");
     }
   }

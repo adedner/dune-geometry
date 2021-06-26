@@ -9,14 +9,14 @@
 namespace Dune {
 
   // explicit template instatiation
-  template class GaussLobattoQuadratureRule<double, 1>;
-  template class GaussQuadratureRule<double, 1>;
-  template class GaussRadauLeftQuadratureRule<double, 1>;
-  template class GaussRadauRightQuadratureRule<double, 1>;
-  template class Jacobi1QuadratureRule<double, 1>;
-  template class Jacobi2QuadratureRule<double, 1>;
+  template class GaussLobattoQuadratureRule<double>;
+  template class GaussQuadratureRule<double>;
+  template class GaussRadauLeftQuadratureRule<double>;
+  template class GaussRadauRightQuadratureRule<double>;
+  template class Jacobi1QuadratureRule<double>;
+  template class Jacobi2QuadratureRule<double>;
   template class JacobiNQuadratureRule<double, 1>;
-  template class PrismQuadratureRule<double, 3>;
+  template class PrismQuadratureRule<double>;
   template class SimplexQuadratureRule<double, 2>;
   template class SimplexQuadratureRule<double, 3>;
 

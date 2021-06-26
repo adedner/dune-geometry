@@ -8,6 +8,8 @@
 #error Use #include <dune/geometry/quadraturerules.hh> instead.
 #endif
 
+#include "numberconversion.hh"
+
 namespace Dune {
 
   /** \brief Quadrature for a point (0D) */
@@ -25,7 +27,7 @@ namespace Dune {
     PointQuadratureRule ()
       : QuadratureRule<ct,0>(GeometryTypes::vertex, highest_order)
     {
-      this->emplace_back(Vector{}, Field{1});
+      this->emplace_back(Vector{}, Field{DUNE_NUMBER(ct,1)});
     }
   };
 

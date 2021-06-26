@@ -12,7 +12,7 @@ load(writequad)$
 orthopoly_returns_intervals : false;
 
 fpprec: 120$
-fpprintprec: 21$ /* 100 */
+fpprintprec: 100$
 maxp: 31$
 /* float2bf: false$ */
 

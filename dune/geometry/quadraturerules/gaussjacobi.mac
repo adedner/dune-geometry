@@ -10,7 +10,7 @@ load(stringproc)$
 load(writequad)$
 
 fpprec: 120$
-fpprintprec: 21$ /* 100 */
+fpprintprec: 100$
 maxp: 61$
 /* float2bf: false$ */
 

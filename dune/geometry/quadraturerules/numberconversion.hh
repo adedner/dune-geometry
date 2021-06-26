@@ -8,9 +8,10 @@
 
 //! expand the number to a value and to a string
 #define DUNE_NUMBER(type,value) \
-  Dune::number< type >(value, #value)
+  Dune::Impl::number< type >(value, #value)
 
 namespace Dune {
+namespace Impl {
 
 //! Construct the number type `ct` from `double` or from a character sequence
 template<typename ct>
@@ -22,6 +23,6 @@ ct number([[maybe_unused]] const double value, [[maybe_unused]] const char* str)
     return value;
 }
 
-} // end namespace Dune
+}} // end namespace Dune::Impl
 
 #endif // DUNE_GEOMETRY_QUADRATURERULES_NUMBERCONVERSION_HH

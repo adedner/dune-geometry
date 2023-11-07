@@ -103,8 +103,14 @@ public:
   /// type of volume
   using Volume = decltype(power(std::declval<ctype>(),mydimension));
 
+  /// type of jacobian
+  using Jacobian = FieldMatrix<ctype, mydimension, coorddimension>;
+
   /// type of jacobian transposed
   using JacobianTransposed = FieldMatrix<ctype, mydimension, coorddimension>;
+
+  /// type of jacobian inverse
+  using JacobianInverse = FieldMatrix<ctype, coorddimension, mydimension>;
 
   /// type of jacobian inverse transposed
   using JacobianInverseTransposed = FieldMatrix<ctype, coorddimension, mydimension>;
@@ -124,6 +130,9 @@ protected:
     && ((Traits::template hasSingleGeometryType<mydimension>::topologyId) >> 1 == 0);
 
 public:
+  /// \brief Default constructed geometry results in an empty/invalid representation.
+  ParametrizedGeometry () = default;
+
   /// \brief Constructor from a vector of coefficients of the LocalBasis parametrizing
   /// the geometry.
   /**
@@ -333,35 +342,6 @@ public:
     return x;
   }
 
-  /// \brief Construct a normal vector of the curved element evaluated at
-  /// a given local coordinate
-  /**
-   * \note Implemented for codim=1 entities only, i.e. edges in 2D and faces in 3D
-   **/
-  GlobalCoordinate normal (const LocalCoordinate& local) const
-  {
-    GlobalCoordinate n = normalDirection(local);
-    return n / n.two_norm();
-  }
-
-  /// \brief Construct a normal direction (not normalized) of the curved element
-  /// evaluated at a given local coordinate
-  /**
-   * \note Implemented for codim=1 entities only, i.e. edges in 2D and faces in 3D
-   **/
-  GlobalCoordinate normalDirection (const LocalCoordinate& local) const
-  {
-    assert(coorddimension == mydimension+1);
-    return [&] {
-      if constexpr ((mydimension == 1) && (coorddimension == 2))
-        return normalDirection1D(local);
-      else if constexpr ((mydimension == 2) && (coorddimension == 3))
-        return normalDirection2D(local);
-      else
-        return GlobalCoordinate(0);
-    }();
-  }
-
   ///  \brief Obtain the integration element
   /**
    *  If the Jacobian of the mapping is denoted by \f$J(x)\f$, the integration
@@ -386,8 +366,11 @@ public:
    **/
   Volume volume () const
   {
-    using std::abs;
     Volume vol0 = volume(QuadratureRules<ctype, mydimension>::rule(type(), 1));
+    if (affine())
+      return vol0;
+
+    using std::abs;
     for (int p = 2; p < 10; ++p) {
       Volume vol1 = volume(QuadratureRules<ctype, mydimension>::rule(type(), p));
       if (abs(vol1 - vol0) < Traits::tolerance())
@@ -407,6 +390,24 @@ public:
     return vol;
   }
 
+  /// \brief Obtain the Jacobian
+  /**
+   *  \param[in]  local  local coordinate to evaluate Jacobian in
+   *  \returns           the matrix corresponding to the Jacobian
+   **/
+  Jacobian jacobian (const LocalCoordinate& local) const
+  {
+    thread_local std::vector<typename LocalBasisTraits::JacobianType> shapeJacobians;
+    localBasis().evaluateJacobian(local, shapeJacobians);
+    assert(shapeJacobians.size() == vertices_.size());
+
+    Jacobian out(0);
+    for (std::size_t i = 0; i < shapeJacobians.size(); ++i)
+      outerProductAccumulate(vertices_[i], shapeJacobians[i], out);
+
+    return out;
+  }
+
   /// \brief Obtain the transposed of the Jacobian
   /**
    *  \param[in]  local  local coordinate to evaluate Jacobian in
@@ -422,6 +423,19 @@ public:
     for (std::size_t i = 0; i < shapeJacobians.size(); ++i)
       outerProductAccumulate(shapeJacobians[i], vertices_[i], out);
 
+    return out;
+  }
+
+  /// \brief obtain the Jacobian's inverse
+  /**
+   *  The Jacobian's inverse is defined as a pseudo-inverse. If we denote
+   *  the Jacobian by \f$J(x)\f$, the following condition holds:
+   *  \f[ J^{-1}(x) J(x) = I. \f]
+   **/
+  JacobianInverse jacobianInverse (const LocalCoordinate& local) const
+  {
+    JacobianInverse out;
+    MatrixHelper::rightInvA(jacobian(local), out);
     return out;
   }
 
@@ -467,25 +481,6 @@ protected:
   const ReferenceElement& refElement () const
   {
     return refElement_;
-  }
-
-  // normal vector to an edge line-element
-  GlobalCoordinate normalDirection1D (const LocalCoordinate& local) const
-  {
-    auto J = jacobianTransposed(local);
-    return GlobalCoordinate{
-       J[0][1],
-      -J[0][0]};
-  }
-
-  // normal vector to a triangle or quad face element
-  GlobalCoordinate normalDirection2D (const LocalCoordinate& local) const
-  {
-    auto J = jacobianTransposed(local);
-    return GlobalCoordinate{
-      J[0][1] * J[1][2] - J[0][2] * J[1][1],
-      J[0][2] * J[1][0] - J[0][0] * J[1][2],
-      J[0][0] * J[1][1] - J[0][1] * J[1][0]};
   }
 
 public:
@@ -546,7 +541,7 @@ private:
   /// A local finite-element
   LocalFiniteElement localFE_;
 
-  /// The (lagrange) coefficients of the interpolating geometry
+  /// The (Lagrange) coefficients of the interpolating geometry
   std::vector<GlobalCoordinate> vertices_;
 
   // some data optionally provided

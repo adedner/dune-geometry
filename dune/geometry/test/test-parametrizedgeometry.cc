@@ -12,23 +12,6 @@
 #include <dune/geometry/test/checkgeometry.hh>
 #include <dune/geometry/test/localfiniteelements.hh>
 
-// check that the normal vector is orthogonal to the columns of the Jacobian matrix
-template <class ctype, int cdim, int mydim>
-static bool checkNormal (const Dune::FieldVector<ctype,cdim>& n,
-                         const Dune::FieldMatrix<ctype,mydim,cdim>& Jt)
-{
-  using std::abs;
-  bool pass = true;
-  for (int i = 0; i < mydim; ++i) {
-    if (abs(n.dot(Jt[i])) > std::numeric_limits<ctype>::epsilon()) {
-      std::cerr << "Error: normal is not orthogonal to columns of Jacobian." << std::endl;
-      pass = false;
-    }
-  }
-  return pass;
-}
-
-
 template <class ctype, int cdim, Dune::GeometryType::Id id>
 static bool testParametrizedGeometry ()
 {
@@ -64,19 +47,6 @@ static bool testParametrizedGeometry ()
   // construct a geometry using local interpolation
   auto geometry2 = Geometry{refElem, lfe, f};
   pass &= checkGeometry(geometry2);
-
-  if constexpr (cdim == gt.dim()+1) {
-    for (auto const& qp : Dune::QuadratureRules<ctype,gt.dim()>::rule(gt,4)) {
-      const auto& c = qp.position();
-
-      // get a vector normal to the geometry
-      pass &= checkNormal(geometry.normal(c), geometry.jacobianTransposed(c));
-      pass &= checkNormal(geometry.normalDirection(c), geometry.jacobianTransposed(c));
-
-      pass &= checkNormal(geometry2.normal(c), geometry2.jacobianTransposed(c));
-      pass &= checkNormal(geometry2.normalDirection(c), geometry2.jacobianTransposed(c));
-    }
-  }
 
   return pass;
 }

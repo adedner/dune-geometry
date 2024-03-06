@@ -3,9 +3,6 @@
 
 #include <cassert>
 #include <functional>
-#include <iterator>
-#include <limits>
-#include <optional>
 #include <type_traits>
 #include <vector>
 
@@ -15,69 +12,25 @@
 #include <dune/common/typetraits.hh>
 #include <dune/common/std/type_traits.hh>
 
-#include <dune/geometry/affinegeometry.hh>
-#include <dune/geometry/multilineargeometry.hh>
+#include <dune/geometry/affinegeometry.hh> // for FieldMatrixHelper
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/referenceelements.hh>
 #include <dune/geometry/type.hh>
+#include <dune/geometry/utility/algorithms.hh>
+#include <dune/geometry/utility/convergence.hh>
 
 namespace Dune {
 
-// ParametrizedGeometryTraits
-// -------------------------
-
-/// \brief default traits class for ParametrizedGeometry
 /**
- *  The ParametrizedGeometry allow tweaking
- *  some implementation details through a traits class.
+ * \brief Curved geometry implementation based on local-basis function parametrization
  *
- *  This structure provides the default values.
+ * Parametrization of the geometry by any localfunction interpolated into a local
+ * finite-element space.
  *
- *  \tparam  ct        coordinate type
+ * \tparam  LFE   Type of a local finite-element.
+ * \tparam  cdim  Coordinate dimension.
  */
-template <class ct>
-struct ParametrizedGeometryTraits
-{
-  using ctype = ct;
-
-  /// \brief helper structure containing some matrix routines. See affinegeometry.hh
-  using MatrixHelper = Impl::FieldMatrixHelper<ct>;
-
-  /// \brief tolerance to numerical algorithms
-  static ct tolerance () { return ct(16) * std::numeric_limits<ct>::epsilon(); }
-
-  /// \brief maximal number of Newton iteration in `geometry.local(global)`
-  static int maxIteration () { return 100; }
-
-  /// \brief Geometry is associated to just one GeometryType
-  template <int dim>
-  struct hasSingleGeometryType
-  {
-    static const bool v = false;
-    static const unsigned int topologyId = ~0u; //< optionally, the topologyId of the single GeometryType
-  };
-};
-
-
-
-// ParametrizedGeometry
-// -------------------
-
-/// \brief Curved geometry implementation based on local-basis function parametrization
-/**
- *  Parametrization of the geometry by any localfunction interpolated into a local finite-element
- *  space.
- *
- *  \tparam  LFE         Type of a local finite-element
- *  \tparam  cdim        coordinate dimension
- *  \tparam  TraitsType  Parameters of the geometry, see \ref ParametrizedGeometryTraits
- *
- *  The requirements on the traits are documented along with their default,
- *  ParametrizedGeometryTraits.
- */
-template <class LFE, int cdim,
-          class TraitsType = ParametrizedGeometryTraits<
-            typename LFE::Traits::LocalBasisType::Traits::DomainFieldType>>
+template <class LFE, int cdim>
 class ParametrizedGeometry
 {
   using LocalFiniteElement = LFE;
@@ -104,13 +57,13 @@ public:
   using Volume = decltype(power(std::declval<ctype>(),mydimension));
 
   /// type of jacobian
-  using Jacobian = FieldMatrix<ctype, mydimension, coorddimension>;
+  using Jacobian = FieldMatrix<ctype, coorddimension, mydimension>;
 
   /// type of jacobian transposed
   using JacobianTransposed = FieldMatrix<ctype, mydimension, coorddimension>;
 
   /// type of jacobian inverse
-  using JacobianInverse = FieldMatrix<ctype, coorddimension, mydimension>;
+  using JacobianInverse = FieldMatrix<ctype, mydimension, coorddimension>;
 
   /// type of jacobian inverse transposed
   using JacobianInverseTransposed = FieldMatrix<ctype, coorddimension, mydimension>;
@@ -120,34 +73,30 @@ public:
   using ReferenceElements = Dune::ReferenceElements<ctype, mydimension>;
   using ReferenceElement = typename ReferenceElements::ReferenceElement;
 
-  /// Parametrization of the geometry
-  using Traits = TraitsType;
-
 protected:
-  using MatrixHelper = typename Traits::MatrixHelper;
-  static const bool singleGeoType = Traits::template hasSingleGeometryType<mydimension>::v;
-  static const bool isFlatAffine = singleGeoType
-    && ((Traits::template hasSingleGeometryType<mydimension>::topologyId) >> 1 == 0);
+  using MatrixHelper = Impl::FieldMatrixHelper<ctype>;
 
 public:
   /// \brief Default constructed geometry results in an empty/invalid representation.
   ParametrizedGeometry () = default;
 
-  /// \brief Constructor from a vector of coefficients of the LocalBasis parametrizing
-  /// the geometry.
   /**
-   *  \param[in]  refElement  reference element for the geometry
-   *  \param[in]  localFE     Local finite-element to use for the parametrization
-   *  \param[in]  vertices    Coefficients of the local interpolation into the basis
+   * \brief Constructor from a vector of coefficients of the LocalBasis parametrizing
+   *        the geometry.
    *
-   *  The vertices are the coefficients of a local interpolation in the local finite-element. For
-   *  Lagrange local bases, these correspond to vertices on the curved geometry in the local
-   *  Lagrange nodes.
+   * \param[in]  refElement  reference element for the geometry
+   * \param[in]  localFE     Local finite-element to use for the parametrization
+   * \param[in]  vertices    Coefficients of the local interpolation into the basis
    *
-   *  \note The vertices are stored internally, so if possible move an external vertex storage
-   *        to this constructor
+   * The vertices are the coefficients of a local interpolation in the local
+   * finite-element. For Lagrange local bases, these correspond to vertices on
+   * the curved geometry in the local Lagrange nodes.
+   *
+   * \note The vertices are stored internally, so if possible move an external
+   *       vertex storage to this constructor
    **/
-  ParametrizedGeometry (const ReferenceElement& refElement, const LocalFiniteElement& localFE,
+  ParametrizedGeometry (const ReferenceElement& refElement,
+                        const LocalFiniteElement& localFE,
                         std::vector<GlobalCoordinate> vertices)
     : refElement_(refElement)
     , localFE_(localFE)
@@ -156,20 +105,23 @@ public:
     assert(localFE_.size() == vertices_.size());
   }
 
-  /// \brief Constructor from a local parametrization function, mapping local to (curved)
-  /// global coordinates
   /**
-   *  \param[in]  refElement      reference element for the geometry
-   *  \param[in]  localFE         Local finite-element to use for the parametrization
-   *  \param[in]  parametrization parametrization function with signature
-   *                              `GlobalCoordinate(LocalCoordinate)`
+   * \brief Constructor from a local parametrization function, mapping local to
+   *        (curved) global coordinates.
    *
-   *  The parametrization function is not stored in the class, but interpolated into the local
-   *  finite-element basis and the computed interpolation coefficients are stored.
+   * \param[in]  refElement      reference element for the geometry
+   * \param[in]  localFE         Local finite-element to use for the parametrization
+   * \param[in]  parametrization parametrization function with signature
+   *                             `GlobalCoordinate(LocalCoordinate)`
+   *
+   * The parametrization function is not stored in the class, but interpolated into
+   * the local finite-element basis and the computed interpolation coefficients
+   * are stored.
    **/
   template <class Param,
-    std::enable_if_t<std::is_invocable_r_v<GlobalCoordinate,Param,LocalCoordinate>, bool> = true>
-  ParametrizedGeometry (const ReferenceElement& refElement, const LocalFiniteElement& localFE,
+    std::enable_if_t<std::is_invocable_r_v<GlobalCoordinate,Param,LocalCoordinate>, int> = 0>
+  ParametrizedGeometry (const ReferenceElement& refElement,
+                        const LocalFiniteElement& localFE,
                         Param&& parametrization)
     : refElement_(refElement)
     , localFE_(localFE)
@@ -177,35 +129,16 @@ public:
     localFE_.localInterpolation().interpolate(parametrization, vertices_);
   }
 
-  /// \brief Constructor, forwarding to the other constructors that take a reference-element
   /**
-   *  \param[in]  gt       geometry type
-   *  \param[in]  args...  arguments passed to the other constructors
+   * \brief Constructor, forwarding to the other constructors that take a reference-element.
+   *
+   * \param[in]  gt       geometry type
+   * \param[in]  args...  arguments passed to the other constructors
    **/
   template <class... Args>
-  ParametrizedGeometry (GeometryType gt, Args&&... args)
+  explicit ParametrizedGeometry (GeometryType gt, Args&&... args)
     : ParametrizedGeometry(ReferenceElements::general(gt), std::forward<Args>(args)...)
   {}
-
-  /// \brief Copy constructor
-  ParametrizedGeometry (const ParametrizedGeometry& that)
-    : ParametrizedGeometry(that.refElement_, that.localFE_, that.vertices_)
-  {}
-
-  /// \brief Move constructor
-  ParametrizedGeometry (ParametrizedGeometry&& that)
-    : ParametrizedGeometry(that.refElement_, std::move(that.localFE_), std::move(that.vertices_))
-  {}
-
-  /// \brief Copy/Move assignment operator
-  ParametrizedGeometry& operator= (ParametrizedGeometry that)
-  {
-    using std::swap;
-    swap(refElement_, that.refElement_);
-    swap(localFE_, that.localFE_);
-    swap(vertices_, that.vertices_);
-    return *this;
-  }
 
   /// \brief Obtain the polynomial order of the parametrization
   int order () const
@@ -216,9 +149,7 @@ public:
   /// \brief Is this mapping affine? This is only true for flat affine geometries.
   bool affine () const
   {
-    if (!affine_)
-      affine_ = (order() == 1 && (isFlatAffine || type().isSimplex() || flatGeometry().affine() ));
-    return *affine_;
+    return (order() == 1 && refElement_.template geometry<0>(0).affine());
   }
 
   /// \brief Obtain the name of the reference element
@@ -246,15 +177,16 @@ public:
     return global(refElement_.position(0, 0));
   }
 
-  /// \brief Evaluate the coordinate mapping
   /**
-   *  Implements a linear combination of local basis functions scaled by
-   *  the vertices as coefficients.
+   * \brief Evaluate the coordinate mapping
    *
-   *  \f[ global = \sum_i v_i \psi_i(local) \f]
+   * Implements a linear combination of local basis functions scaled by
+   * the vertices as coefficients.
    *
-   *  \param[in] local  local coordinate to map
-   *  \returns          corresponding global coordinate
+   * \f[ global = \sum_i v_i \psi_i(local) \f]
+   *
+   * \param[in] local  local coordinate to map
+   * \returns          corresponding global coordinate
    **/
   GlobalCoordinate global (const LocalCoordinate& local) const
   {
@@ -269,111 +201,73 @@ public:
     return out;
   }
 
-  /// \brief Evaluate the inverse coordinate mapping
   /**
-   *  \param[in] globalCoord  global coordinate to map
-   *  \return                 corresponding local coordinate
+   * \brief Evaluate the inverse coordinate mapping.
+   * \param[in] y  Global coordinate to map
+   * \param[in] opts  Parameters to control the behavior of the Gauss-Newton
+   *                  algorithm.
    *
-   *  \throws in case of an error indicating that the local coordinate can not be obtained,
-   *          an exception is thrown. See \ref checkedLocal for a variant that returns
-   *          an optional instead.
+   * \return For given global coordinate `y` the local coordinate `x` that minimizes
+   *         the function `(global(x) - y).two_norm2()` over the local coordinate
+   *         space spanned by the reference element.
    *
-   *  \note For given global coordinate `y` the returned local coordinate `x` that minimizes
-   *  the following function over the local coordinate space spanned by the reference element.
-   *  \code
-   *  (global( x ) - y).two_norm()
-   *  \endcode
+   *  \throws In case of an error indicating that the local coordinate can not be
+   *          obtained, an exception is thrown, with an error code from
+   *          \ref `GaussNewtonErrorCode`.
+   *  \note It is not guaranteed that the resulting local coordinate is inside the
+   *        reference element domain.
    **/
-  LocalCoordinate local (const GlobalCoordinate& globalCoord) const
+  LocalCoordinate local (const GlobalCoordinate& y, Impl::GaussNewtonOptions<ctype> opts = {}) const
   {
-    auto localCoord = checkedLocal(globalCoord);
-    if (!localCoord)
-      DUNE_THROW(Exception,
-        "Local coordinate cannot be recovered from given global coordinate " << globalCoord);
+    LocalCoordinate x = refElement_.position(0,0);
+    Impl::GaussNewtonErrorCode err = Impl::gaussNewton(
+      [&](const LocalCoordinate& local) { return this->global(local); },
+      [&](const LocalCoordinate& local) { return this->jacobianTransposed(local); },
+      y, x, opts
+    );
 
-    return *localCoord;
-  }
-
-  /// \brief Evaluate the inverse coordinate mapping
-  /**
-   *  \param[in] globalCoord  global coordinate to map
-   *  \return                 optional wrapping the corresponding local coordinate
-   *
-   *  See \ref local() for some details.
-   *
-   *  The evaluation of local coordinates may fail if the jacobian is not invertible, or
-   *  the Newton method to calculate the local coordinate fails to converge. Either the
-   *  number of iteration or the tolerance in the \ref Traits class could be modified to
-   *  control the convergence of the Newton method.
-   **/
-  std::optional<LocalCoordinate> checkedLocal (const GlobalCoordinate& globalCoord) const
-  {
-    const ctype tolerance = Traits::tolerance();
-    LocalCoordinate x = flatGeometry().local(globalCoord);
-
-    LocalCoordinate dx;
-    const bool affineMapping = affine();
-
-    for (int i = 0; i < Traits::maxIteration(); ++i)
-    {
-      // Newton's method: DF^n dx^n = F^n, x^{n+1} -= dx^n
-      const GlobalCoordinate dglobal = global(x) - globalCoord;
-      const bool invertible = MatrixHelper::xTRightInvA(jacobianTransposed(x), dglobal, dx);
-
-      // break if jacobian is not invertible
-      if (!invertible)
-        return std::nullopt;
-
-      // update x with correction
-      x -= dx;
-
-      // for affine mappings only one iteration is needed
-      if (affineMapping)
-        return x;
-
-      // break if tolerance is reached.
-      if (dx.two_norm2() < tolerance)
-        return x;
-    }
-
-    if (dx.two_norm2() > tolerance)
-      return std::nullopt;
+    if (err != Impl::GaussNewtonErrorCode::OK)
+      DUNE_THROW(Dune::Exception,
+        "Local coordinate can not be recovered from global coordinate, error code = " << int(err) << "\n"
+        << "  (global(x) - y).two_norm() = " << (global(x) - y).two_norm()
+        << " > tol = " << opts.absTol);
 
     return x;
   }
 
-  ///  \brief Obtain the integration element
   /**
-   *  If the Jacobian of the mapping is denoted by \f$J(x)\f$, the integration
-   *  element \f$\mu(x)\f$ is given by
+   * \brief Obtain the integration element.
    *
-   *  \f[ \mu(x) = \sqrt{|\det (J^T(x) J(x))|}.\f]
+   * If the Jacobian of the geometry is denoted by $J(x)$, the integration element
+   * \f$\mu(x)\f$ is given by \f[ \mu(x) = \sqrt{|\det (J^T(x) J(x))|}.\f]
    *
-   *  \param[in]  local  local coordinate to evaluate the integration element in
-   *  \returns           the integration element \f$\mu(x)\f$.
+   * \param[in]  local  local coordinate to evaluate the integration element in.
+   *
+   * \returns the integration element \f$\mu(x)\f$.
    **/
   ctype integrationElement (const LocalCoordinate& local) const
   {
     return MatrixHelper::sqrtDetAAT(jacobianTransposed(local));
   }
 
-  /// \brief Obtain the volume of the mapping's image
   /**
+   * \brief Obtain the volume of the mapping's image.
+   *
    * Calculates the volume of the entity by numerical integration. Since the
-   * polynomial order of the Volume element is not known, iteratively compute
+   * polynomial order of the volume element is not known, iteratively compute
    * numerical integrals with increasing order of the quadrature rules, until
    * tolerance is reached.
    **/
-  Volume volume () const
+  Volume volume (Impl::ConvergenceOptions<ctype> opts = {}) const
   {
     Volume vol0 = volume(QuadratureRules<ctype, mydimension>::rule(type(), 1));
     if (affine())
       return vol0;
 
     using std::abs;
-    for (int p = 2; p < 10; ++p) {
+    for (int p = 2; p < opts.maxIt; ++p) {
       Volume vol1 = volume(QuadratureRules<ctype, mydimension>::rule(type(), p));
-      if (abs(vol1 - vol0) < Traits::tolerance())
+      if (abs(vol1 - vol0) < opts.absTol)
         return vol1;
 
       vol0 = vol1;
@@ -381,7 +275,7 @@ public:
     return vol0;
   }
 
-  /// \brief Obtain the volume of the mapping's image by given quadrature rules
+  /// \brief Obtain the volume of the mapping's image by given quadrature rules.
   Volume volume (const QuadratureRule<ctype, mydimension>& quadRule) const
   {
     Volume vol(0);
@@ -390,10 +284,10 @@ public:
     return vol;
   }
 
-  /// \brief Obtain the Jacobian
   /**
-   *  \param[in]  local  local coordinate to evaluate Jacobian in
-   *  \returns           the matrix corresponding to the Jacobian
+   * \brief Obtain the Jacobian.
+   * \param[in]  local  local coordinate to evaluate Jacobian in
+   * \returns the matrix corresponding to the Jacobian
    **/
   Jacobian jacobian (const LocalCoordinate& local) const
   {
@@ -402,60 +296,54 @@ public:
     assert(shapeJacobians.size() == vertices_.size());
 
     Jacobian out(0);
-    for (std::size_t i = 0; i < shapeJacobians.size(); ++i)
-      outerProductAccumulate(vertices_[i], shapeJacobians[i], out);
-
+    for (std::size_t i = 0; i < shapeJacobians.size(); ++i) {
+      for (int j = 0; j < Jacobian::rows; ++j) {
+        shapeJacobians[i].umtv(vertices_[i][j], out[j]);
+      }
+    }
     return out;
   }
 
-  /// \brief Obtain the transposed of the Jacobian
   /**
-   *  \param[in]  local  local coordinate to evaluate Jacobian in
-   *  \returns           the matrix corresponding to the transposed of the Jacobian
+   * \brief Obtain the transposed of the Jacobian.
+   * \param[in]  local  local coordinate to evaluate Jacobian in
+   * \returns the matrix corresponding to the transposed of the Jacobian
    **/
   JacobianTransposed jacobianTransposed (const LocalCoordinate& local) const
   {
-    thread_local std::vector<typename LocalBasisTraits::JacobianType> shapeJacobians;
-    localBasis().evaluateJacobian(local, shapeJacobians);
-    assert(shapeJacobians.size() == vertices_.size());
-
-    JacobianTransposed out(0);
-    for (std::size_t i = 0; i < shapeJacobians.size(); ++i)
-      outerProductAccumulate(shapeJacobians[i], vertices_[i], out);
-
-    return out;
+    return jacobian(local).transposed();
   }
 
-  /// \brief obtain the Jacobian's inverse
   /**
-   *  The Jacobian's inverse is defined as a pseudo-inverse. If we denote
-   *  the Jacobian by \f$J(x)\f$, the following condition holds:
-   *  \f[ J^{-1}(x) J(x) = I. \f]
+   * \brief Obtain the Jacobian's inverse.
+   *
+   * The Jacobian's inverse is defined as a pseudo-inverse. If we denote the
+   * Jacobian by \f$J(x)\f$, the following condition holds:
+   *   \f[ J^{-1}(x) J(x) = I. \f]
    **/
   JacobianInverse jacobianInverse (const LocalCoordinate& local) const
   {
     JacobianInverse out;
-    MatrixHelper::rightInvA(jacobian(local), out);
+    MatrixHelper::leftInvA(jacobian(local), out);
     return out;
   }
 
-  /// \brief obtain the transposed of the Jacobian's inverse
   /**
-   *  The Jacobian's inverse is defined as a pseudo-inverse. If we denote
-   *  the Jacobian by \f$J(x)\f$, the following condition holds:
-   *  \f[ J^{-1}(x) J(x) = I. \f]
+   * \brief Obtain the transposed of the Jacobian's inverse.
+   *
+   * The Jacobian's inverse is defined as a pseudo-inverse. If we denote the
+   * Jacobian by \f$J(x)\f$, the following condition holds:
+   *   \f[ J^{-1}(x) J(x) = I. \f]
    **/
   JacobianInverseTransposed jacobianInverseTransposed (const LocalCoordinate& local) const
   {
-    JacobianInverseTransposed out;
-    MatrixHelper::rightInvA(jacobianTransposed(local), out);
-    return out;
+    return jacobianInverse(local).transposed();
   }
 
   /// \brief Obtain the reference-element related to this geometry
   friend ReferenceElement referenceElement (const ParametrizedGeometry& geometry)
   {
-    return geometry.refElement();
+    return geometry.refElement_;
   }
 
   /// \brief Obtain the local finite-element
@@ -476,77 +364,15 @@ public:
     return localFE_.localBasis();
   }
 
-protected:
-  // the internal stored reference element
-  const ReferenceElement& refElement () const
-  {
-    return refElement_;
-  }
-
-public:
-  // type of a flat geometry build of the corner vertices
-  using FlatGeometry = std::conditional_t<isFlatAffine,
-    AffineGeometry<ctype, mydimension, coorddimension>,
-    MultiLinearGeometry<ctype, mydimension, coorddimension>>;
-
-  // construct a flat geometry from the corner vertices
-  const FlatGeometry& flatGeometry () const
-  {
-    if (!flatGeometry_) {
-      std::vector<GlobalCoordinate> corners;
-      corners.reserve(refElement_.size(mydimension));
-      for (int i = 0; i < refElement_.size(mydimension); ++i)
-        corners.push_back(global(refElement_.position(i, mydimension)));
-
-      flatGeometry_ = FlatGeometry{refElement_, corners};
-    }
-
-    return *flatGeometry_;
-  }
-
-private:
-  // Let a and b be two column vectors then res += a^T*b
-  template <class T, int n, int m>
-  static void outerProductAccumulate (const FieldVector<T,n>& a, const FieldVector<T,m>& b,
-                                      FieldMatrix<T,n,m>& res)
-  {
-    for (int i = 0; i < n; ++i)
-      for (int j = 0; j < m; ++j)
-        res[i][j] += a[i] * b[j];
-  }
-
-  // Let a and b be two column vectors then res += a^T*b
-  template <class T, int n, int m>
-  static void outerProductAccumulate (const FieldMatrix<T,n,1>& a, const FieldVector<T,m>& b,
-                                      FieldMatrix<T,n,m>& res)
-  {
-    for (int i = 0; i < n; ++i)
-      for (int j = 0; j < m; ++j)
-        res[i][j] += a[i][0] * b[j];
-  }
-
-  // Let a be a row vector and b be a column vector then res += a*b
-  template <class T, int n, int m,
-    std::enable_if_t<(n > 1), int> = 0>
-  static void outerProductAccumulate (const FieldMatrix<T,1,n>& a, const FieldVector<T,m>& b,
-                                      FieldMatrix<T,n,m>& res)
-  {
-    outerProductAccumulate(a[0], b, res);
-  }
-
 private:
   /// Reference of the geometry
-  ReferenceElement refElement_;
+  ReferenceElement refElement_{};
 
   /// A local finite-element
-  LocalFiniteElement localFE_;
+  LocalFiniteElement localFE_{};
 
   /// The (Lagrange) coefficients of the interpolating geometry
-  std::vector<GlobalCoordinate> vertices_;
-
-  // some data optionally provided
-  mutable std::optional<bool> affine_;
-  mutable std::optional<FlatGeometry> flatGeometry_;
+  std::vector<GlobalCoordinate> vertices_{};
 };
 
 namespace Impl {
@@ -566,7 +392,7 @@ ParametrizedGeometry (Geo::ReferenceElement<I>, const LFE&, std::vector<GlobalCo
   -> ParametrizedGeometry<LFE, GlobalCoordinate::dimension>;
 
 template <class I, class LFE, class F,
-          class Range = std::result_of_t<F(Impl::LocalCoordinate_t<LFE>)>>
+          class Range = std::invoke_result_t<F,Impl::LocalCoordinate_t<LFE>>>
 ParametrizedGeometry (Geo::ReferenceElement<I>, const LFE&, const F&)
   -> ParametrizedGeometry<LFE, Range::dimension>;
 
@@ -575,7 +401,7 @@ ParametrizedGeometry (GeometryType, const LFE& localFE, std::vector<GlobalCoordi
   -> ParametrizedGeometry<LFE, GlobalCoordinate::dimension>;
 
 template <class LFE, class F,
-          class Range = std::result_of_t<F(Impl::LocalCoordinate_t<LFE>)>>
+          class Range = std::invoke_result_t<F,Impl::LocalCoordinate_t<LFE>>>
 ParametrizedGeometry (GeometryType, const LFE&, const F&)
   -> ParametrizedGeometry<LFE, Range::dimension>;
 

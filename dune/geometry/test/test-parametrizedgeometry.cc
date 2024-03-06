@@ -3,6 +3,7 @@
 #include <config.h>
 
 #include <limits>
+#include <cmath>
 #include <type_traits>
 #include <vector>
 
@@ -26,11 +27,20 @@ static bool testParametrizedGeometry ()
     >;
   auto lfe = LFE{};
 
+  Dune::FieldMatrix<ctype,cdim,gt.dim()> A;
+  for (int i = 0; i < cdim; ++i)
+    for (int j = 0; j < int(gt.dim()); ++j)
+      A[i][j] = ctype(3-std::abs(i-j));
+
+  Dune::FieldVector<ctype,cdim> b;
+  for (std::size_t i = 0; i < cdim; ++i)
+    b[i] = ctype(i+1);
+
   // mapping to generate coordinates from reference-element corners
   auto f = [&](Dune::FieldVector<ctype,gt.dim()> const& x) {
     Dune::FieldVector<ctype,cdim> y;
-    for (std::size_t i = 0; i < gt.dim(); ++i)
-      y[i] = x[i] + i;
+    A.mv(x,y);
+    y += b;
     return y;
   };
 

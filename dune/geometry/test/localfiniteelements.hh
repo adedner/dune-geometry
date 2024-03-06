@@ -5,7 +5,12 @@
 #ifndef DUNE_GEOMETRY_TEST_LOCALFINITEELEMENT_HH
 #define DUNE_GEOMETRY_TEST_LOCALFINITEELEMENT_HH
 
+#include <algorithm>
 #include <vector>
+
+#include <dune/common/fmatrix.hh>
+#include <dune/common/fvector.hh>
+#include <dune/common/math.hh>
 
 namespace Dune { namespace Impl
 {

@@ -26,7 +26,7 @@
 namespace Dune {
 
 /**
- * \brief Curved geometry implementation based on local-basis function parametrization
+ * \brief Geometry implementation based on local-basis function parametrization
  *
  * Parametrization of the geometry by any localfunction interpolated into a local
  * finite-element space.
@@ -35,7 +35,7 @@ namespace Dune {
  * \tparam  cdim  Coordinate dimension.
  */
 template <class LFE, int cdim>
-class ParametrizedGeometry
+class LocalFiniteElementGeometry
 {
   using LocalFiniteElement = LFE;
   using LocalBasis = typename LFE::Traits::LocalBasisType;
@@ -82,7 +82,7 @@ protected:
 
 public:
   /// \brief Default constructed geometry results in an empty/invalid representation.
-  ParametrizedGeometry () = default;
+  LocalFiniteElementGeometry () = default;
 
   /**
    * \brief Constructor from a vector of coefficients of the LocalBasis parametrizing
@@ -99,7 +99,7 @@ public:
    * \note The vertices are stored internally, so if possible move an external
    *       vertex storage to this constructor
    **/
-  ParametrizedGeometry (const ReferenceElement& refElement,
+  LocalFiniteElementGeometry (const ReferenceElement& refElement,
                         const LocalFiniteElement& localFE,
                         std::vector<GlobalCoordinate> vertices)
     : refElement_(refElement)
@@ -124,7 +124,7 @@ public:
    **/
   template <class Param,
     std::enable_if_t<std::is_invocable_r_v<GlobalCoordinate,Param,LocalCoordinate>, int> = 0>
-  ParametrizedGeometry (const ReferenceElement& refElement,
+  LocalFiniteElementGeometry (const ReferenceElement& refElement,
                         const LocalFiniteElement& localFE,
                         Param&& parametrization)
     : refElement_(refElement)
@@ -140,8 +140,8 @@ public:
    * \param[in]  args...  arguments passed to the other constructors
    **/
   template <class... Args>
-  explicit ParametrizedGeometry (GeometryType gt, Args&&... args)
-    : ParametrizedGeometry(ReferenceElements::general(gt), std::forward<Args>(args)...)
+  explicit LocalFiniteElementGeometry (GeometryType gt, Args&&... args)
+    : LocalFiniteElementGeometry(ReferenceElements::general(gt), std::forward<Args>(args)...)
   {}
 
   /// \brief Obtain the polynomial order of the parametrization
@@ -345,7 +345,7 @@ public:
   }
 
   /// \brief Obtain the reference-element related to this geometry
-  friend ReferenceElement referenceElement (const ParametrizedGeometry& geometry)
+  friend ReferenceElement referenceElement (const LocalFiniteElementGeometry& geometry)
   {
     return geometry.refElement_;
   }
@@ -392,22 +392,22 @@ using LocalCoordinate_t
 
 // deduction guides
 template <class I, class LFE, class GlobalCoordinate>
-ParametrizedGeometry (Geo::ReferenceElement<I>, const LFE&, std::vector<GlobalCoordinate>)
-  -> ParametrizedGeometry<LFE, GlobalCoordinate::dimension>;
+LocalFiniteElementGeometry (Geo::ReferenceElement<I>, const LFE&, std::vector<GlobalCoordinate>)
+  -> LocalFiniteElementGeometry<LFE, GlobalCoordinate::dimension>;
 
 template <class I, class LFE, class F,
           class Range = std::invoke_result_t<F,Impl::LocalCoordinate_t<LFE>>>
-ParametrizedGeometry (Geo::ReferenceElement<I>, const LFE&, const F&)
-  -> ParametrizedGeometry<LFE, Range::dimension>;
+LocalFiniteElementGeometry (Geo::ReferenceElement<I>, const LFE&, const F&)
+  -> LocalFiniteElementGeometry<LFE, Range::dimension>;
 
 template <class LFE, class GlobalCoordinate>
-ParametrizedGeometry (GeometryType, const LFE& localFE, std::vector<GlobalCoordinate>)
-  -> ParametrizedGeometry<LFE, GlobalCoordinate::dimension>;
+LocalFiniteElementGeometry (GeometryType, const LFE& localFE, std::vector<GlobalCoordinate>)
+  -> LocalFiniteElementGeometry<LFE, GlobalCoordinate::dimension>;
 
 template <class LFE, class F,
           class Range = std::invoke_result_t<F,Impl::LocalCoordinate_t<LFE>>>
-ParametrizedGeometry (GeometryType, const LFE&, const F&)
-  -> ParametrizedGeometry<LFE, Range::dimension>;
+LocalFiniteElementGeometry (GeometryType, const LFE&, const F&)
+  -> LocalFiniteElementGeometry<LFE, Range::dimension>;
 
 } // namespace Dune
 

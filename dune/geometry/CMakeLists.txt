@@ -13,7 +13,7 @@ install(FILES
   generalvertexorder.hh
   mappedgeometry.hh
   multilineargeometry.hh
-  parametrizedgeometry.hh
+  localfiniteelementgeometry.hh
   quadraturerules.hh
   referenceelement.hh
   referenceelementimplementation.hh

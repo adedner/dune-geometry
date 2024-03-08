@@ -100,8 +100,8 @@ public:
    *       vertex storage to this constructor
    **/
   LocalFiniteElementGeometry (const ReferenceElement& refElement,
-                        const LocalFiniteElement& localFE,
-                        std::vector<GlobalCoordinate> vertices)
+                              const LocalFiniteElement& localFE,
+                              std::vector<GlobalCoordinate> vertices)
     : refElement_(refElement)
     , localFE_(localFE)
     , vertices_(std::move(vertices))
@@ -125,8 +125,8 @@ public:
   template <class Param,
     std::enable_if_t<std::is_invocable_r_v<GlobalCoordinate,Param,LocalCoordinate>, int> = 0>
   LocalFiniteElementGeometry (const ReferenceElement& refElement,
-                        const LocalFiniteElement& localFE,
-                        Param&& parametrization)
+                              const LocalFiniteElement& localFE,
+                              Param&& parametrization)
     : refElement_(refElement)
     , localFE_(localFE)
   {
@@ -153,7 +153,7 @@ public:
   /// \brief Is this mapping affine? This is only true for flat affine geometries.
   bool affine () const
   {
-    return (order() == 1 && refElement_.template geometry<0>(0).affine());
+    return (order() == 1 && type().isSimplex());
   }
 
   /// \brief Obtain the name of the reference element

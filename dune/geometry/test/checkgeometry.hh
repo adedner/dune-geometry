@@ -207,6 +207,29 @@ namespace Dune
       const Jacobian &J = geometry.jacobian( x );
       const JacobianInverse &Ji = geometry.jacobianInverse( x );
 
+      {
+        const JacobianInverseTransposed &Jit_2 = geometry.jacobianInverseTransposed( x );
+        if( Jit != Jit_2)
+        {
+          std::cerr << "Error: jacobianInverseTransposed() produced different results on subsequent calls." << std::endl;
+          std::cerr << "Comparison of results gives : " << (Jit == Jit_2) << std::endl;
+
+          // This will sometimes return nonzero values for MultiLinearGeometry in optimized builds,
+          // but the difference is not implemented for all matrix types.
+          if constexpr (std::is_base_of_v<FieldMatrix<ctype, coorddim, mydim>, JacobianInverseTransposed>)
+          {
+            std::cerr << "Norm of the difference is   : " << (Jit - Jit_2).infinity_norm() << std::endl;
+          }
+
+          // This works for all matrix types. But if this output is enabled, the above check
+          // passes for the critical cases.
+//          auto JitAsFieldMatrix = Impl::toFieldMatrix< ctype, coorddim, mydim >(Jit);
+//          auto JitAsFieldMatrix_2 = Impl::toFieldMatrix< ctype, coorddim, mydim >(Jit_2);
+//          std::cerr << "Norm of the difference is   : " << (JitAsFieldMatrix - JitAsFieldMatrix_2).infinity_norm() << std::endl;
+          pass = false;
+        }
+      }
+
       // Transform to FieldMatrix, so we can have coefficient access and other goodies
       auto JtAsFieldMatrix = Impl::toFieldMatrix< ctype, mydim, coorddim >(Jt);
       auto JitAsFieldMatrix = Impl::toFieldMatrix< ctype, coorddim, mydim >(Jit);
@@ -247,14 +270,14 @@ namespace Dune
       // Test whether the methods 'jacobianTransposed' and 'jacobianInverseTransposed'
       // are the transposed of 'jacobian' and 'jacobianInverse', respectively.
       {
-        if( (JtAsFieldMatrix - JAsFieldMatrix.transposed()).infinity_norm() != 0 )
+        if( (JtAsFieldMatrix - JAsFieldMatrix.transposed()).infinity_norm() > JtAsFieldMatrix.infinity_norm()*tolerance )
         {
           std::cerr << "Error: jacobian and jacobianTransposed are not transposed to each other." << std::endl;
           pass = false;
         }
       }
       {
-        if( (JitAsFieldMatrix - JiAsFieldMatrix.transposed()).infinity_norm() != 0 )
+        if( (JitAsFieldMatrix - JiAsFieldMatrix.transposed()).infinity_norm() > JitAsFieldMatrix.infinity_norm()*tolerance )
         {
           std::cerr << "Error: jacobianInverse and jacobianInverseTransposed are not transposed to each other." << std::endl;
           pass = false;

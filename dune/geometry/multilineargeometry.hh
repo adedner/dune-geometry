@@ -209,6 +209,9 @@ namespace Dune
     /** \brief Type for the inverse Jacobian matrix */
     typedef FieldMatrix< ctype, mydimension, coorddimension > JacobianInverse;
 
+    /** \brief Type for the Hessian matrix */
+    typedef FieldMatrix< ctype, mydimension*(mydimension + 1) / 2, coorddimension > Hessian;
+
   protected:
 
     typedef Dune::ReferenceElements< ctype, mydimension > ReferenceElements;
@@ -418,6 +421,36 @@ namespace Dune
     JacobianInverse jacobianInverse (const LocalCoordinate &local) const
     {
       return jacobianInverseTransposed(local).transposed();
+    }
+
+    /** \brief obtain the Hessian
+ *
+ *  \param[in]  local  local coordinate to evaluate Jacobian in
+ *
+ *  \returns a copy of the Hessian
+ *
+ */
+    JacobianTransposed hessian ( const LocalCoordinate &local ) const
+    {
+      Hessian h=0;
+      if constexpr (mydim==1)
+        return h;
+      else {
+
+        JacobianTransposed jt;
+        if (!affine(jt)) {
+          if( Impl::isPrism( toUnsignedInt(topologyId()), mydimension ) ) {
+//???
+          }else
+            {
+            ///cubes?
+            ///everything else is affine? and therfore the Hessian is zero?
+
+          }
+        }else
+          return h;
+      }
+      return h;
     }
 
   protected:

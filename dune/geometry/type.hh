@@ -473,16 +473,46 @@ namespace Dune
       return GeometryType(0,dim,true);
     }
 
+    /** \brief Removes the bit for the highest dimension and returns the lower-dimensional GeometryType */
+    inline constexpr GeometryType base(const GeometryType& gt)
+    {
+      return GeometryType(gt.id() & ((1 << (gt.dim()-1))-1), gt.dim()-1, gt.isNone());
+    }
+
     /** \brief Return GeometryType of a conical construction with gt as base  */
     inline constexpr GeometryType conicalExtension(const GeometryType& gt)
     {
       return GeometryType(gt.id(), gt.dim()+1, gt.isNone());
     }
 
+    /** \brief Return GeometryType of a conical construction with lhs as base  */
+    inline constexpr GeometryType conicalProduct(const GeometryType& lhs, const GeometryType& rhs)
+    {
+      if (rhs.isVertex())
+        return conicalExtension(lhs);
+      else {
+        assert(rhs.isConical());
+        return conicalProduct(conicalExtension(lhs), base(rhs));
+      }
+    }
+
     /** \brief Return GeometryType of a prismatic construction with gt as base  */
     inline constexpr GeometryType prismaticExtension(const GeometryType& gt)
     {
       return GeometryType(gt.id() | ((1 << gt.dim())), gt.dim()+1, gt.isNone());
+    }
+
+    /** \brief Return GeometryType of a prismatic construction with lhs as base  */
+    inline constexpr GeometryType prismaticProduct(const GeometryType& lhs, const GeometryType& rhs)
+    {
+      if (rhs.dim() == 0)
+        return lhs;
+      else if (rhs.dim() == 1)
+        return prismaticExtension(lhs);
+      else {
+        assert(rhs.isPrismatic());
+        return prismaticProduct(prismaticExtension(lhs), base(rhs));
+      }
     }
 
     //! GeometryType representing a vertex.

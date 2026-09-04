@@ -12,6 +12,7 @@
 
 #include <bitset>
 
+#include <dune/common/densetensor.hh>
 #include <dune/common/fvector.hh>
 #include <dune/common/fmatrix.hh>
 #include <dune/common/diagonalmatrix.hh>
@@ -107,6 +108,9 @@ namespace Dune {
      * hence it could be replaced by something more efficient.
      */
     using JacobianInverse = std::conditional_t<dim==coorddim, DiagonalMatrix<ctype,dim>, FieldMatrix<ctype,dim,coorddim> >;
+
+    /** \brief type of the Hessian of the geometry mapping */
+    using Hessian = DenseTensor<ctype, coorddimension, mydimension, mydimension>;
 
     /** \brief Constructs an empty geometry.
      *
@@ -235,6 +239,12 @@ namespace Dune {
     JacobianInverse jacobianInverse([[maybe_unused]] const LocalCoordinate& local) const
     {
       return jacobianInverseTransposed(local).transposed();
+    }
+
+    /** \brief Hessian of this mapping is a zero tensor. */
+    Hessian hessian (const LocalCoordinate& /*local*/) const
+    {
+      return Hessian(0);
     }
 
     /** \brief Return the integration element, i.e., the determinant term in the integral
